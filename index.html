@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YouTube Playlist Manager</title>
+</head>
+
+<body>
+  <h1>Login</h1>
+
+  <p id="status"></p>
+  <button id="login-btn" disabled>Sign in with Google</button>
+  <button id="logout-btn" hidden>Sign out</button>
+
+  <!-- Google Identity Services library (provides the global `google` object) -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
