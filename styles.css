@@ -1,0 +1,93 @@
+:root {
+  color-scheme: light dark;           /* follow the user's light/dark setting */
+  font-family: system-ui, sans-serif;
+}
+
+/* Without this, any rule that sets `display` would override the hidden attribute */
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0 auto;
+  padding: 1rem;
+  max-width: 80rem;
+}
+
+main {
+  display: grid;
+  grid-template-columns: minmax(14rem, 20rem) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 48rem) {
+  main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Playlists */
+#playlist-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+#playlist-list button {
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  text-align: left;
+  font: inherit;
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.25);
+  cursor: pointer;
+}
+
+#playlist-list button:hover,
+#playlist-list button[aria-current="true"] {
+  background: rgba(128, 128, 128, 0.2);
+}
+
+#playlist-list .count {
+  opacity: 0.7;
+}
+
+/* Videos: one scrollable list, plain text rows */
+.video-table {
+  overflow-x: auto;
+}
+
+#video-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.video-row {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 1.5fr) 6.5rem 5rem;
+  gap: 1rem;
+  min-width: 38rem;
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.25);
+  overflow-wrap: anywhere;
+}
+
+.video-header {
+  font-weight: 600;
+}
+
+/* Lets the browser skip layout/paint for rows that are scrolled out of view,
+   which keeps a 5,000-row list fast. 2rem is the estimated row height. */
+#video-list > .video-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 2rem;
+}
+
+.video-row.unavailable {
+  opacity: 0.6;
+}

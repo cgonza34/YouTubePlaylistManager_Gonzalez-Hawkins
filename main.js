@@ -6,6 +6,9 @@
  */
 import { createApp } from './app.js';
 import { createAuthView } from './ui/authView.js';
+import { createPlaylistListView } from './ui/playlistListView.js';
+import { createVideoListView } from './ui/videoListView.js';
+import { createPlaylistService } from './services/playlistService.js';
 
 /**
  * Creates app controller after browser window is loaded (ensures async Google
@@ -15,8 +18,15 @@ window.addEventListener('load', () => {
   // Create view components as members of an object using factories
   const views = {
     auth: createAuthView(document),
+    playlists: createPlaylistListView(document),
+    videos: createVideoListView(document),
   };
 
-  // Create app controller and pass view components to connect them; start app
-  createApp({ views }).start();
+  // Create stateful services as members of an object using factories
+  const services = {
+    playlists: createPlaylistService(),
+  };
+
+  // Create app controller and pass view components, services to connect them; start app
+  createApp({ views, services }).start();
 });

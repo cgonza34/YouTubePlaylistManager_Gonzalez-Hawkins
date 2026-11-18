@@ -9,6 +9,7 @@ import { getToken, expireToken } from './auth.js';
 import { AuthError, ApiError } from '../errors.js';
 
 const BASE = 'https://www.googleapis.com/youtube/v3';       // base URL for calling the API
+const MAX_PAGE_SIZE = 50;                                   // YT API maximum for maxResults, and for IDs per videos.list call
 
 /**
  * Builds URL for all API calls and queries YT API services; keeps URL error
@@ -51,6 +52,17 @@ async function apiGet(path, params) {
 }
 
 /**
+ * Reshapes a list response into the two things callers need: this page's
+ * items, and the token for requesting the next page (null on the last page).
+ * 
+ * @param {object} data API list response as json
+ * @returns {{items: object[], nextPageToken: string|null}}
+ */
+function toPage(data) {
+  return { items: data.items ?? [], nextPageToken: data.nextPageToken ?? null };
+}
+
+/**
  * Fetches a basic descriptive summary of user's own channel; costs 1 quota
  * unit.
  * 
@@ -59,4 +71,86 @@ async function apiGet(path, params) {
 export async function fetchMyChannel() {
   const data = await apiGet('channels', { part: 'snippet', mine: 'true' });
   return data.items?.[0] ?? null;
+}
+
+/**
+ * Fetches ONE page (up to 50) of the user's own playlists; costs 1 quota unit.
+ * The fields param trims the response to what the app uses (this also leaves
+ * out thumbnails). To get every playlist, the caller (a service) repeats this
+ * call, passing back each nextPageToken, until nextPageToken is null.
+ * 
+ * @param {string|null} [pageToken] nextPageToken from the previous page; omit
+ *                                  for the first page
+ * @returns {Promise<{items: object[], nextPageToken: string|null}>} each item
+ *          looks like {id, snippet: {title}, contentDetails: {itemCount}}
+ */
+export async function fetchMyPlaylistsPage(pageToken = null) {
+  const params = {
+    part: 'snippet,contentDetails',
+    mine: 'true',
+    maxResults: String(MAX_PAGE_SIZE),
+    fields: 'nextPageToken,items(id,snippet/title,contentDetails/itemCount)',
+  };
+  // Only add pageToken when there is one (an undefined value would be sent as
+  // the text "undefined")
+  if (pageToken) params.pageToken = pageToken;
+
+  return toPage(await apiGet('playlists', params));
+}
+
+/**
+ * Fetches ONE page (up to 50) of the videos in a playlist; costs 1 quota unit.
+ * Pages depend on each other (each needs the previous page's nextPageToken),
+ * so the caller must request them one after another.
+ * 
+ * Items have no duration: request it separately with fetchVideoDetailsBatch.
+ * snippet.publishedAt (not requested) is when the video was ADDED to the
+ * playlist; contentDetails.videoPublishedAt is when it was UPLOADED to YT.
+ * Private and deleted videos come back with placeholder titles and no
+ * videoOwnerChannelTitle or videoPublishedAt.
+ * 
+ * @param {string} playlistId playlist to read
+ * @param {string|null} [pageToken] nextPageToken from the previous page; omit
+ *                                  for the first page
+ * @returns {Promise<{items: object[], nextPageToken: string|null}>} each item
+ *          looks like {snippet: {title, videoOwnerChannelTitle, resourceId:
+ *          {videoId}}, contentDetails: {videoPublishedAt}}
+ */
+export async function fetchPlaylistItemsPage(playlistId, pageToken = null) {
+  const params = {
+    part: 'snippet,contentDetails',
+    playlistId,
+    maxResults: String(MAX_PAGE_SIZE),
+    fields: 'nextPageToken,items(snippet(title,videoOwnerChannelTitle,resourceId/videoId),contentDetails/videoPublishedAt)',
+  };
+  if (pageToken) params.pageToken = pageToken;
+
+  return toPage(await apiGet('playlistItems', params));
+}
+
+/**
+ * Fetches details for up to 50 specific videos in ONE call; costs 1 quota
+ * unit. Currently requests only duration (ISO 8601, e.g. "PT1H2M3S"). To cover
+ * a longer list of videos, the caller splits the IDs into chunks of 50.
+ * 
+ * Videos that are private or deleted are missing from the result (not an
+ * error): the caller should match results to IDs, not assume the same count.
+ * 
+ * @param {string[]} videoIds at most 50 video IDs
+ * @returns {Promise<object[]>} each item looks like {id, contentDetails:
+ *          {duration}}
+ * @throws {RangeError} if more than 50 IDs are passed
+ */
+export async function fetchVideoDetailsBatch(videoIds) {
+  if (videoIds.length === 0) return [];
+  if (videoIds.length > MAX_PAGE_SIZE) {
+    throw new RangeError(`At most ${MAX_PAGE_SIZE} video IDs per call (got ${videoIds.length}).`);
+  }
+
+  const data = await apiGet('videos', {
+    part: 'contentDetails',
+    id: videoIds.join(','),
+    fields: 'items(id,contentDetails/duration)',
+  });
+  return data.items ?? [];
 }

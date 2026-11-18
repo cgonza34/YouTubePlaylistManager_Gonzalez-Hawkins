@@ -5,14 +5,39 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>YouTube Playlist Manager</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./styles.css">
 </head>
 
 <body>
-  <h1>Login Page</h1>
+  <header>
+    <h1>YouTube Playlist Manager</h1>
+    <p id="status" role="status" aria-live="polite"></p>
+    <button id="login-btn" disabled>Sign in with Google</button>
+    <button id="logout-btn" hidden>Sign out</button>
+  </header>
 
-  <p id="status" role="status" aria-live="polite"></p>
-  <button id="login-btn" disabled>Sign in with Google</button>
-  <button id="logout-btn" hidden>Sign out</button>
+  <main>
+    <section id="playlists-section" hidden>
+      <h2>Playlists</h2>
+      <p id="playlists-status" role="status" aria-live="polite"></p>
+      <ul id="playlist-list"></ul>
+    </section>
+
+    <section id="videos-section" hidden>
+      <h2 id="videos-title"></h2>
+      <p id="videos-status"></p>
+      <div id="videos-table" class="video-table" hidden>
+        <div class="video-row video-header">
+          <span>Title</span>
+          <span>Uploader</span>
+          <span>Uploaded</span>
+          <span>Length</span>
+        </div>
+        <ol id="video-list"></ol>
+      </div>
+    </section>
+  </main>
 
   <!-- Google Identity Services library (provides the global `google` object) -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
